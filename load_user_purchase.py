@@ -1,5 +1,7 @@
 import airflow.utils.dates
+import numpy as np
 from airflow import DAG
+
 from custom_modules.s3_to_postgres import S3ToPostgresTransfer
 
 USER = 'josema.pereira'
@@ -18,12 +20,35 @@ default_args = {
     "start_date": airflow.utils.dates.days_ago(1),
 }
 
+schema = {
+    "InvoiceNo": "str",
+    "StockCode": "str",
+    "Description": "str",
+    "Quantity": np.float64,
+    "UnitPrice": np.float64,
+    "CustomerID": np.float64,
+    "Country": "str",
+}
+query_file_name = "bootcampdb.user_purchase.sql"
+list_target_fields = [
+    "InvoiceNo",
+    "StockCode",
+    "Description",
+    "Quantity",
+    "InvoiceDate",
+    "UnitPrice",
+    "CustomerID",
+    "Country",
+]
 dag = DAG(TASK_DAG_NAME, default_args=default_args, schedule_interval="@daily")
 
 process_dag = S3ToPostgresTransfer(
     task_id=TASK_PRODUCTS_ID,
     schema=SCHEMA,
     table=PRODUCTS_TABLE,
+    table_schema=schema,
+    query_file_name=query_file_name,
+    list_target_fields=list_target_fields,
     s3_bucket=S3_BUCKET,
     s3_key=S3_PRODUCTS_FILE,
     aws_conn_postgres_id=POSTGRESS_PRODUCT_CONNECTION,
